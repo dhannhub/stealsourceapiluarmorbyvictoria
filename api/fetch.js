@@ -1,4 +1,4 @@
-// api/fetch.js
+// api/fetch.js (CommonJS)
 module.exports = async (req, res) => {
     // CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -18,13 +18,15 @@ module.exports = async (req, res) => {
     }
     
     try {
-        // Timeout 10 detik
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 10000);
+        const timeout = setTimeout(() => controller.abort(), 15000);
         
         const response = await fetch(url, {
             signal: controller.signal,
-            headers: { 'User-Agent': 'Mozilla/5.0 (LuaFetcher)' }
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': '*/*'
+            }
         });
         clearTimeout(timeout);
         
@@ -33,14 +35,18 @@ module.exports = async (req, res) => {
         }
         
         const contentType = response.headers.get('content-type') || '';
-        const text = await response.text();
+        const rawContent = await response.text();
         
-        // Cek apakah balikan HTML
-        if (text.trim().startsWith('<') || text.includes('<!DOCTYPE')) {
-            throw new Error('URL mengembalikan halaman HTML, bukan script Lua.');
-        }
+        // KIRIM BALIK APA PUN YANG DIDAPAT (HTML, JS, LUA)
+        // Kita tidak perlu filter, biar user lihat mentahannya
+        res.status(200).json({ 
+            success: true, 
+            content: rawContent,
+            contentType: contentType,
+            url: url,
+            note: rawContent.length > 100 ? 'Content received (may include HTML wrapper)' : 'Content is short'
+        });
         
-        res.status(200).json({ success: true, content: text });
     } catch (err) {
         console.error('Fetch error:', err.message);
         res.status(500).json({ error: err.message });
