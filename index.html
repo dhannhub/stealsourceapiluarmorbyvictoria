@@ -3,19 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lua Loader Fetcher | Extract from Luarmor</title>
+    <title>Luarmor Loader Extractor | Get Real Lua Source</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', monospace; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Fira Code', monospace; }
         body { background: linear-gradient(135deg, #0a0f1e 0%, #0a1f2e 100%); min-height: 100vh; color: #e0e0e0; padding: 20px; }
-        .container { max-width: 1300px; margin: 0 auto; }
-        .header { text-align: center; margin-bottom: 40px; padding: 30px; background: rgba(10,20,30,0.6); backdrop-filter: blur(10px); border-radius: 30px; border: 1px solid rgba(0,255,255,0.3); }
-        .header h1 { font-size: 2.5rem; background: linear-gradient(90deg,#0ff,#f0f); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; padding: 30px; background: rgba(10,20,30,0.6); backdrop-filter: blur(10px); border-radius: 30px; border: 1px solid rgba(0,255,255,0.3); }
+        .header h1 { font-size: 2rem; background: linear-gradient(90deg,#0ff,#f0f); -webkit-background-clip: text; background-clip: text; color: transparent; }
         .input-group { background: rgba(20,30,45,0.8); border-radius: 20px; padding: 25px; margin-bottom: 30px; }
         .url-input { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px; }
         .url-input input { flex: 1; padding: 14px; background: #0a1420; border: 1px solid #2a3a4a; border-radius: 12px; color: #fff; font-family: monospace; }
         .url-input input:focus { outline: none; border-color: #0ff; }
         button { padding: 14px 28px; background: linear-gradient(90deg,#0ff,#f0f); border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         button:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,255,255,0.4); }
+        .tabs { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #2a3a4a; padding-bottom: 10px; }
+        .tab-btn { padding: 10px 20px; background: transparent; color: #aaa; border: none; border-radius: 8px; cursor: pointer; }
+        .tab-btn.active { background: #0ff; color: #000; }
         .output { background: #0a1020; border-radius: 20px; border: 1px solid #2a3a4a; overflow: hidden; }
         .output-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: #0f1a2a; border-bottom: 1px solid #2a3a4a; flex-wrap: wrap; gap: 10px; }
         .action-buttons { display: flex; gap: 12px; }
@@ -26,49 +29,54 @@
         .status.error { background: #2a1a1a; color: #ff6666; display: block; }
         .status.success { background: #1a2a1a; color: #66ff66; display: block; }
         .status.info { background: #1a2a3a; color: #ffaa44; display: block; }
-        .info-box { background: #1e2a3a; padding: 15px; border-radius: 12px; margin-bottom: 20px; font-size: 0.9rem; border-left: 4px solid #0ff; }
+        .info-box { background: #1e2a3a; padding: 15px; border-radius: 12px; margin-bottom: 20px; border-left: 4px solid #0ff; }
         .footer { text-align: center; margin-top: 40px; padding: 20px; color: #666; font-size: 0.8rem; }
         .loader { display: inline-block; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #0ff; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: middle; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        @media (max-width: 768px) { .url-input { flex-direction: column; } button { width: 100%; } }
+        @media (max-width: 768px) { .url-input { flex-direction: column; } button { width: 100%; } .action-buttons { width: 100%; justify-content: center; } }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <h1>🔮 LUA LOADER EXTRACTOR</h1>
-        <p>Fetch source dari Luarmor / URL apapun → tampilkan mentah → download sebagai .lua</p>
+        <h1>🔓 LUARMOR LOADER EXTRACTOR</h1>
+        <p>Ekstrak source Lua sebenarnya dari URL loader Luarmor</p>
     </div>
 
     <div class="input-group">
-        <label>🔗 URL Target (Lua script / Loader)</label>
+        <label>🔗 URL Loader Luarmor</label>
         <div class="url-input">
             <input type="text" id="targetUrl" value="https://api.luarmor.net/files/v4/loaders/9a91b3ba6fb71423853ec2f885c42d67.lua">
-            <button id="fetchBtn">🚀 FETCH SOURCE</button>
+            <button id="fetchBtn">🚀 FETCH & EXTRACT</button>
         </div>
         <div class="info-box" style="margin-top: 15px;">
-            💡 <strong>Info:</strong> URL Luarmor biasanya mengembalikan HTML dengan script di dalamnya. 
-            Tool ini akan menampilkan konten MENTAH apa adanya. Kamu bisa download sebagai .lua atau copy.
+            💡 <strong>Cara kerja:</strong> Tool ini akan mengambil HTML dari URL loader, lalu mengekstrak script JavaScript/Lua yang ada di dalamnya, termasuk yang ter-encode atau di dalam tag &lt;script&gt;.
         </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="extracted">🔓 EXTRACTED LUA</button>
+        <button class="tab-btn" data-tab="raw">📄 RAW HTML</button>
+        <button class="tab-btn" data-tab="loadstring">⚡ LOADSTRING RESULT</button>
     </div>
 
     <div class="output">
         <div class="output-header">
-            <h2>📄 RAW CONTENT</h2>
+            <h2 id="tabTitle">🔓 EXTRACTED LUA SOURCE</h2>
             <div class="action-buttons">
                 <button id="copyBtn">📋 COPY</button>
                 <button id="downloadBtn">💾 DOWNLOAD .LUA</button>
-                <button id="extractBtn">🔍 EXTRACT LOADSTRING</button>
+                <button id="decodeBtn">🔧 DECODE/UNESCAPE</button>
             </div>
         </div>
         <div id="status" class="status"></div>
         <div class="code-container">
-            <pre id="codeDisplay">// Hasil fetch akan muncul di sini\nKlik "FETCH SOURCE" untuk memulai</pre>
+            <pre id="codeDisplay">// Klik "FETCH & EXTRACT" untuk mengambil source dari Luarmor</pre>
         </div>
     </div>
 
     <div class="footer">
-        ⚡ Powered by Vercel Serverless | No CORS | Fetch raw content dari URL apapun
+        ⚡ Powered by Vercel | Ekstrak source Lua dari loader yang diproteksi
     </div>
 </div>
 
@@ -76,13 +84,18 @@
     const targetUrlInput = document.getElementById('targetUrl');
     const fetchBtn = document.getElementById('fetchBtn');
     const codeDisplay = document.getElementById('codeDisplay');
+    const tabTitle = document.getElementById('tabTitle');
     const statusDiv = document.getElementById('status');
     const copyBtn = document.getElementById('copyBtn');
     const downloadBtn = document.getElementById('downloadBtn');
-    const extractBtn = document.getElementById('extractBtn');
-
-    let currentContent = '';
-    let currentContentType = '';
+    const decodeBtn = document.getElementById('decodeBtn');
+    
+    let currentData = {
+        rawHtml: '',
+        extractedLua: '',
+        loadstringResult: ''
+    };
+    let activeTab = 'extracted';
 
     function showStatus(message, type = 'info') {
         statusDiv.textContent = message;
@@ -95,15 +108,63 @@
 
     function setLoading(loading) {
         if (loading) {
-            fetchBtn.innerHTML = '<span class="loader"></span> FETCHING...';
+            fetchBtn.innerHTML = '<span class="loader"></span> PROCESSING...';
             fetchBtn.disabled = true;
         } else {
-            fetchBtn.innerHTML = '🚀 FETCH SOURCE';
+            fetchBtn.innerHTML = '🚀 FETCH & EXTRACT';
             fetchBtn.disabled = false;
         }
     }
 
-    async function fetchSource() {
+    // Fungsi ekstrak Lua dari HTML
+    function extractLuaFromHtml(html) {
+        let extracted = '';
+        
+        // 1. Cari script yang mengandung loadstring atau kode Lua
+        const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+        let scripts = [];
+        let match;
+        while ((match = scriptRegex.exec(html)) !== null) {
+            scripts.push(match[1]);
+        }
+        
+        // 2. Gabungkan semua script
+        let allScript = scripts.join('\n');
+        
+        // 3. Cari pola loadstring
+        const loadstringPattern = /loadstring\(['"](.*?)['"]\)/g;
+        let loadstrings = [];
+        let lsMatch;
+        while ((lsMatch = loadstringPattern.exec(allScript)) !== null) {
+            let content = lsMatch[1];
+            // Unescape
+            content = content.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\r/g, '\r').replace(/\\"/g, '"').replace(/\\'/g, "'");
+            loadstrings.push(content);
+        }
+        
+        if (loadstrings.length > 0) {
+            extracted = loadstrings.join('\n\n-- ========== NEXT LOADSTRING ==========\n\n');
+            currentData.loadstringResult = extracted;
+        } else {
+            // 4. Cari pola yang mirip kode Lua (game:HttpGet, etc)
+            const luaPattern = /(game:\s*HttpGet|loadstring|getgenv|\_G\[)/i;
+            if (luaPattern.test(allScript)) {
+                extracted = allScript;
+                currentData.loadstringResult = allScript;
+            } else {
+                extracted = '// Tidak ditemukan loadstring yang jelas\n// Script yang ditemukan:\n\n' + allScript.substring(0, 5000);
+                currentData.loadstringResult = allScript;
+            }
+        }
+        
+        // 5. Bersihkan hasil
+        extracted = extracted.trim();
+        if (!extracted) extracted = '// Tidak ada script yang bisa diekstrak dari HTML ini.\n// Mungkin URL bukan loader Luarmor atau sudah tidak valid.';
+        
+        return extracted;
+    }
+
+    async function fetchAndExtract() {
         const url = targetUrlInput.value.trim();
         if (!url) {
             showStatus('❌ URL tidak boleh kosong!', 'error');
@@ -119,28 +180,45 @@
                 throw new Error(data.error || 'Gagal mengambil source');
             }
 
-            currentContent = data.content;
-            currentContentType = data.contentType || 'text/plain';
-            codeDisplay.textContent = currentContent;
+            currentData.rawHtml = data.html;
             
-            let msg = `✅ Berhasil mengambil ${currentContent.length} karakter`;
-            if (data.contentType) msg += ` | Type: ${data.contentType}`;
-            showStatus(msg, 'success');
+            // Ekstrak Lua
+            currentData.extractedLua = extractLuaFromHtml(data.html);
+            
+            // Tampilkan sesuai tab aktif
+            updateDisplay();
+            
+            showStatus(`✅ Berhasil! HTML: ${data.length} karakter, Lua terekstrak: ${currentData.extractedLua.length} karakter`, 'success');
         } catch (err) {
             showStatus('❌ Error: ' + err.message, 'error');
-            codeDisplay.textContent = `// Error fetching source\n// ${err.message}\n\n// Coba URL lain atau cek koneksi internet`;
-            currentContent = '';
+            currentData.extractedLua = `// Error fetching source\n// ${err.message}\n\n// Coba URL lain atau cek koneksi internet`;
+            currentData.rawHtml = `Error: ${err.message}`;
+            updateDisplay();
         } finally {
             setLoading(false);
         }
     }
 
+    function updateDisplay() {
+        if (activeTab === 'extracted') {
+            codeDisplay.textContent = currentData.extractedLua || '// Belum ada data, klik FETCH dulu';
+            tabTitle.textContent = '🔓 EXTRACTED LUA SOURCE';
+        } else if (activeTab === 'raw') {
+            codeDisplay.textContent = currentData.rawHtml || '// Belum ada data, klik FETCH dulu';
+            tabTitle.textContent = '📄 RAW HTML RESPONSE';
+        } else {
+            codeDisplay.textContent = currentData.loadstringResult || '// Belum ada data, klik FETCH dulu';
+            tabTitle.textContent = '⚡ LOADSTRING RESULT';
+        }
+    }
+
     function copyToClipboard() {
-        if (!currentContent) {
+        const content = codeDisplay.textContent;
+        if (!content || content.includes('Belum ada data')) {
             showStatus('⚠️ Tidak ada content untuk di-copy. Fetch dulu!', 'error');
             return;
         }
-        navigator.clipboard.writeText(currentContent).then(() => {
+        navigator.clipboard.writeText(content).then(() => {
             showStatus('📋 Content berhasil di-copy ke clipboard!', 'success');
         }).catch(() => {
             showStatus('❌ Gagal copy', 'error');
@@ -148,63 +226,72 @@
     }
 
     function downloadAsLua() {
-        if (!currentContent) {
+        let content = '';
+        if (activeTab === 'extracted') content = currentData.extractedLua;
+        else if (activeTab === 'raw') content = currentData.rawHtml;
+        else content = currentData.loadstringResult;
+        
+        if (!content || content.includes('Belum ada data')) {
             showStatus('⚠️ Tidak ada content untuk di-download. Fetch dulu!', 'error');
             return;
         }
-        const blob = new Blob([currentContent], { type: 'text/plain' });
+        
+        const filename = activeTab === 'extracted' ? 'extracted_lua.lua' : (activeTab === 'raw' ? 'raw_response.html' : 'loadstring_result.lua');
+        const blob = new Blob([content], { type: 'text/plain' });
         const a = document.createElement('a');
         const url = URL.createObjectURL(blob);
         a.href = url;
-        a.download = 'loader.lua';
+        a.download = filename;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        showStatus('💾 Download dimulai: loader.lua', 'success');
+        showStatus(`💾 Download: ${filename}`, 'success');
     }
 
-    function extractLoadstring() {
-        if (!currentContent) {
-            showStatus('⚠️ Tidak ada content. Fetch dulu!', 'error');
+    function decodeContent() {
+        let content = codeDisplay.textContent;
+        if (!content || content.includes('Belum ada data')) {
+            showStatus('⚠️ Tidak ada content untuk di-decode', 'error');
             return;
         }
         
-        // Coba ekstrak loadstring / script dari HTML
-        let extracted = '';
+        // Unescape string
+        let decoded = content
+            .replace(/\\n/g, '\n')
+            .replace(/\\t/g, '\t')
+            .replace(/\\r/g, '\r')
+            .replace(/\\"/g, '"')
+            .replace(/\\'/g, "'")
+            .replace(/\\\\/g, '\\');
         
-        // Cari pola loadstring
-        const loadstringPattern = /loadstring\(['"](.*?)['"]\)/s;
-        const match = currentContent.match(loadstringPattern);
+        codeDisplay.textContent = decoded;
         
-        if (match) {
-            extracted = match[1].replace(/\\n/g, '\n').replace(/\\/g, '');
-            showStatus('🔍 Loadstring ditemukan! Cek tab hasil ekstraksi.', 'info');
-        } else {
-            // Coba cari script block
-            const scriptMatch = currentContent.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
-            if (scriptMatch) {
-                extracted = scriptMatch[1];
-                showStatus('🔍 Script block ditemukan dalam HTML.', 'info');
-            } else {
-                extracted = 'Tidak ditemukan loadstring atau script yang jelas.\n\nIni adalah content mentah:\n' + currentContent.substring(0, 1000);
-                showStatus('⚠️ Tidak ada loadstring yang jelas, tampilkan content mentah', 'info');
-            }
-        }
+        // Update data sesuai tab
+        if (activeTab === 'extracted') currentData.extractedLua = decoded;
+        else if (activeTab === 'raw') currentData.rawHtml = decoded;
+        else currentData.loadstringResult = decoded;
         
-        // Tampilkan hasil ekstraksi di preview
-        codeDisplay.textContent = extracted;
-        currentContent = extracted;
-        showStatus('✨ Content telah diganti dengan hasil ekstraksi. Bisa download/copy sekarang.', 'success');
+        showStatus('🔧 String telah di-unescape (\\n → newline, etc)', 'success');
     }
 
-    fetchBtn.addEventListener('click', fetchSource);
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeTab = btn.getAttribute('data-tab');
+            updateDisplay();
+        });
+    });
+
+    fetchBtn.addEventListener('click', fetchAndExtract);
     copyBtn.addEventListener('click', copyToClipboard);
     downloadBtn.addEventListener('click', downloadAsLua);
-    extractBtn.addEventListener('click', extractLoadstring);
+    decodeBtn.addEventListener('click', decodeContent);
 
     // Auto fetch on load
-    fetchSource();
+    fetchAndExtract();
 </script>
 </body>
 </html>
