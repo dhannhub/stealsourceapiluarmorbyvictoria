@@ -1,0 +1,14 @@
+{
+  "name": "lua-fetcher",
+  "version": "1.0.0",
+  "description": "Fetch and download Lua source from any URL, deploy on Vercel",
+  "main": "index.html",
+  "scripts": {
+    "dev": "echo 'Open index.html locally or use vercel dev'"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "",
+  "license": "MIT"
+}
