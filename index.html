@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lua Source Fetcher | Download Loader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Fira Code', monospace;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0f1e 0%, #0a1f2e 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 20px;
+            background: rgba(10, 20, 30, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #00ffff, #ff00ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #aaa;
+            font-size: 1rem;
+        }
+
+        /* Input Section */
+        .input-group {
+            background: rgba(20, 30, 45, 0.8);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid #2a3a4a;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #0ff;
+        }
+
+        .url-input {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .url-input input {
+            flex: 1;
+            padding: 14px 20px;
+            background: #0a1420;
+            border: 1px solid #2a3a4a;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            font-family: monospace;
+            transition: all 0.3s;
+        }
+
+        .url-input input:focus {
+            outline: none;
+            border-color: #0ff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+
+        button {
+            padding: 14px 28px;
+            background: linear-gradient(90deg, #0ff, #f0f);
+            border: none;
+            border-radius: 12px;
+            color: #000;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 255, 255, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        /* Output Section */
+        .output {
+            background: #0a1020;
+            border-radius: 20px;
+            border: 1px solid #2a3a4a;
+            overflow: hidden;
+        }
+
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: #0f1a2a;
+            border-bottom: 1px solid #2a3a4a;
+        }
+
+        .output-header h2 {
+            font-size: 1.2rem;
+            color: #0ff;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-buttons button {
+            padding: 8px 16px;
+            background: #1e2a3a;
+            color: #fff;
+            font-size: 0.85rem;
+        }
+
+        .action-buttons button:hover {
+            background: #2a3a4a;
+        }
+
+        .code-container {
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        pre {
+            margin: 0;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #d4d4d4;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .status {
+            padding: 12px 20px;
+            background: #1a2a2a;
+            color: #ffaa44;
+            border-bottom: 1px solid #2a3a4a;
+            display: none;
+        }
+
+        .status.error {
+            background: #2a1a1a;
+            color: #ff6666;
+        }
+
+        .status.success {
+            background: #1a2a1a;
+            color: #66ff66;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        /* Loading spinner */
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #0ff;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .url-input {
+                flex-direction: column;
+            }
+            button {
+                width: 100%;
+            }
+            .header h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔮 LUA SOURCE FETCHER</h1>
+            <p>Ambil source loader dari URL → tampilkan → download sebagai .lua</p>
+        </div>
+
+        <div class="input-group">
+            <label>🔗 URL Target (Lua script)</label>
+            <div class="url-input">
+                <input type="text" id="targetUrl" value="https://api.luarmor.net/files/v4/loaders/9a91b3ba6fb71423853ec2f885c42d67.lua">
+                <button id="fetchBtn">🚀 FETCH SOURCE</button>
+            </div>
+        </div>
+
+        <div class="output">
+            <div class="output-header">
+                <h2>📄 SOURCE CODE</h2>
+                <div class="action-buttons">
+                    <button id="copyBtn">📋 COPY</button>
+                    <button id="downloadBtn">💾 DOWNLOAD .LUA</button>
+                </div>
+            </div>
+            <div id="status" class="status"></div>
+            <div class="code-container">
+                <pre id="codeDisplay">// Hasil fetch akan muncul di sini\nKlik "FETCH SOURCE" untuk memulai</pre>
+            </div>
+        </div>
+
+        <div class="footer">
+            ⚡ Powered by Vercel Serverless Functions | No CORS, 100% Work
+        </div>
+    </div>
+
+    <script>
+        const targetUrlInput = document.getElementById('targetUrl');
+        const fetchBtn = document.getElementById('fetchBtn');
+        const codeDisplay = document.getElementById('codeDisplay');
+        const statusDiv = document.getElementById('status');
+        const copyBtn = document.getElementById('copyBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        let currentContent = '';
+
+        function showStatus(message, isError = false) {
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + (isError ? 'error' : 'success');
+            statusDiv.style.display = 'block';
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 4000);
+        }
+
+        function setLoading(loading) {
+            if (loading) {
+                fetchBtn.innerHTML = '<span class="loader"></span> FETCHING...';
+                fetchBtn.disabled = true;
+            } else {
+                fetchBtn.innerHTML = '🚀 FETCH SOURCE';
+                fetchBtn.disabled = false;
+            }
+        }
+
+        async function fetchSource() {
+            const url = targetUrlInput.value.trim();
+            if (!url) {
+                showStatus('❌ URL tidak boleh kosong!', true);
+                return;
+            }
+
+            setLoading(true);
+            try {
+                // Panggil API endpoint kita sendiri (serverless function)
+                const response = await fetch(`/api/fetch?url=${encodeURIComponent(url)}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Gagal mengambil source');
+                }
+
+                currentContent = data.content;
+                codeDisplay.textContent = currentContent;
+                showStatus('✅ Source berhasil diambil!', false);
+            } catch (err) {
+                showStatus('❌ Error: ' + err.message, true);
+                codeDisplay.textContent = `// Error fetching source\n// ${err.message}`;
+                currentContent = '';
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function copyToClipboard() {
+            if (!currentContent) {
+                showStatus('⚠️ Tidak ada source untuk di-copy. Fetch dulu!', true);
+                return;
+            }
+            navigator.clipboard.writeText(currentContent).then(() => {
+                showStatus('📋 Source berhasil di-copy ke clipboard!', false);
+            }).catch(() => {
+                showStatus('❌ Gagal copy ke clipboard', true);
+            });
+        }
+
+        function downloadAsLua() {
+            if (!currentContent) {
+                showStatus('⚠️ Tidak ada source untuk di-download. Fetch dulu!', true);
+                return;
+            }
+            const blob = new Blob([currentContent], { type: 'text/plain' });
+            const a = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            a.href = url;
+            a.download = 'loader.lua';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showStatus('💾 Download dimulai: loader.lua', false);
+        }
+
+        fetchBtn.addEventListener('click', fetchSource);
+        copyBtn.addEventListener('click', copyToClipboard);
+        downloadBtn.addEventListener('click', downloadAsLua);
+
+        // Auto fetch on load
+        fetchSource();
+    </script>
+</body>
+</html>
